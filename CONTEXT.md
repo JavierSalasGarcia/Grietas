@@ -25,7 +25,7 @@ Sentinel-1 (2014–2026) y se visualiza en un panel municipal.
 | 3 | Entrenamiento student (MobileNetV3) | ⬜ Pendiente | chat nuevo (depende Fase 2) |
 | 4 | PWA ciudadana | ⬜ Pendiente | chat nuevo (independiente) |
 | 5 | Backend FastAPI | ✅ Completo 2026-06-22 | rama `claude/grietas-toluca-phase-5-39vnvl` |
-| 6 | Ortorrectificación | ⬜ Pendiente | chat nuevo (depende Fase 5) |
+| 6 | Ortorrectificación | ✅ Completo 2026-06-22 | rama `claude/grietas-toluca-phase-6-un7wg2` |
 | 7 | Segmentación y análisis | ⬜ Pendiente | chat nuevo (depende Fase 6) |
 | 8 | InSAR + índice de riesgo | ⬜ Pendiente | chat nuevo (depende Fase 7) |
 | 9 | Dashboard municipal | ⬜ Pendiente | chat nuevo (depende Fase 8) |

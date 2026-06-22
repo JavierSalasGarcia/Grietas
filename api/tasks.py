@@ -65,10 +65,10 @@ async def _process_report_async(task, report_id: str):
 
             image = cv2.imread(report.image_path)
             meta = report.metadata_json
-            ortho, gsd = orthorectify(image, meta)
+            ortho, gsd, quality = orthorectify(image, meta)
             ortho_path = report.image_path.replace(".jpg", "_ortho.jpg")
             cv2.imwrite(ortho_path, ortho)
-            report.ortho_quality = "good" if gsd is not None else "poor"
+            report.ortho_quality = quality
 
             # Paso 3 — Segmentación y métricas
             report.processing_status = "segmenting"
