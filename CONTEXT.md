@@ -295,10 +295,47 @@ GITHUB_TOKEN=...          # opcional para Fase 0
 
 ---
 
-## 10. Rama git y convenciones
+## 10. Ramas git y convenciones
 
-- **Rama de trabajo**: `claude/pavement-crack-downloader-ywz2ai`
-- **Commit por fase**: un commit al terminar cada fase, mensaje `feat: fase N — <descripción>`
+### Estrategia de ramas
+
+Cada fase se desarrolla en su propia rama y se mergea a `main` al pasar tests.
+
+```
+main  (siempre ejecutable)
+├── fase/1-preprocessing        base: main
+├── fase/2-teacher              base: main (mergea tras fase/1)
+├── fase/3-student              base: main (mergea tras fase/2)
+├── fase/4-pwa                  base: main (independiente)
+├── fase/5-backend              base: main (independiente)
+├── fase/6-orthorectify         base: main (mergea tras fase/5)
+├── fase/7-crack-analysis       base: main (mergea tras fase/6)
+├── fase/8-insar-risk           base: main (mergea tras fase/7)
+└── fase/9-dashboard            base: main (mergea tras fase/8)
+```
+
+Las fases **1–3** y **4–5** pueden desarrollarse en paralelo entre sí;
+las fases **6–9** son secuenciales y requieren que la anterior esté en `main`.
+
+### Convenciones de commit
+
+- `feat: fase N — descripción` al terminar la implementación principal
+- `test: fase N — descripción` al añadir/ajustar tests
+- `fix: fase N — descripción` para correcciones post-revisión
+
+### Flujo por fase
+
+```bash
+git checkout main && git pull origin main
+git checkout -b fase/N-nombre
+# ... desarrollo ...
+pytest tests/ -v                          # todos los tests en verde
+git add <archivos específicos>
+git commit -m "feat: fase N — descripción"
+git push -u origin fase/N-nombre
+# crear PR → revisar → merge a main
+```
+
 - **Tests**: `pytest tests/ -v` antes de cada commit
 - **Archivos gitignored**: `pavement_crack_datasets/`, `dataset_processed/`, `models/`, `data/`, `__pycache__/`, `.env`
 
@@ -311,8 +348,8 @@ Pegar al inicio del nuevo chat:
 ```
 Implementa la Fase N del proyecto Grietas Toluca.
 Lee CONTEXT.md y faseN.md para el contexto completo.
-Trabaja en la rama claude/pavement-crack-downloader-ywz2ai.
-Rama activa: git checkout claude/pavement-crack-downloader-ywz2ai
+Crea la rama fase/N-<nombre> con base en main.
+Repositorio: javiersalasgarcia/grietas
 ```
 
 El modelo leerá ambos archivos y tendrá todo lo necesario para proceder
