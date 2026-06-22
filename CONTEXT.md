@@ -20,7 +20,7 @@ Sentinel-1 (2014–2026) y se visualiza en un panel municipal.
 | Fase | Nombre | Estado | Chat |
 |------|--------|--------|------|
 | 0 | Descarga de datasets | ✅ Completo | — |
-| 1 | Preprocesamiento | ⬜ Pendiente | chat nuevo |
+| 1 | Preprocesamiento | ✅ Completo (2026-06-22) | `claude/grietas-toluca-phase-1-i8d7qd` |
 | 2 | Entrenamiento teacher (DINOv2) | ⬜ Pendiente | chat nuevo (depende Fase 1) |
 | 3 | Entrenamiento student (MobileNetV3) | ⬜ Pendiente | chat nuevo (depende Fase 2) |
 | 4 | PWA ciudadana | ⬜ Pendiente | chat nuevo (independiente) |

@@ -1,4 +1,4 @@
-# Fase 1 — Preprocesamiento y Validación del Dataset `[PENDIENTE]`
+# Fase 1 — Preprocesamiento y Validación del Dataset `[COMPLETO]`
 
 ## Contexto del proyecto
 
@@ -402,3 +402,43 @@ print("Stats:", stats)
 
 **Fase 2** — Entrenamiento del modelo Teacher (`fase2.md`).
 Lee `dataset_processed/` y `dataset_stats.json` para hacer fine-tuning de DINOv2.
+
+---
+
+## Implementación realizada ✅
+
+**Fecha de completado:** 2026-06-22
+**Rama:** `claude/grietas-toluca-phase-1-i8d7qd`
+**Commit:** `700cf42`
+
+### Archivos creados
+
+| Archivo | Descripción |
+|---------|-------------|
+| `preprocessing/preprocess_dataset.py` | Script principal con los 7 pasos del pipeline |
+| `tests/test_preprocess.py` | 30 tests unitarios — todos en verde (`30 passed, 1.18s`) |
+
+### Desviaciones respecto a la especificación
+
+1. **`FileHandler` lazy**: La especificación original inicializaba el `logging.FileHandler`
+   en el nivel de módulo, lo que falla al importar si `pavement_crack_datasets/` no existe.
+   Se extrajo a una función `_add_file_handler()` llamada dentro de `main()`, manteniendo
+   el `StreamHandler` a nivel de módulo. El comportamiento en producción es idéntico.
+
+2. **Ruta del script**: La especificación indica `preprocess_dataset.py` en la raíz.
+   Se colocó en `preprocessing/preprocess_dataset.py` según la estructura canónica de
+   `CONTEXT.md` (sección 3). El script se ejecuta desde la raíz del repo con
+   `python preprocessing/preprocess_dataset.py`.
+
+### Cobertura de tests (30 casos)
+
+| Área | Tests |
+|------|-------|
+| Constantes canónicas (`IMAGE_SIZE`, `RANDOM_SEED`, splits, ratio) | 4 |
+| `load_images_from_registry` — filtros por tipo, categoría y null | 3 |
+| `verify_and_filter` — válidas, inexistentes, corruptas, RGBA | 4 |
+| `balance_classes` — sin acción, submuestreo, preservación minoría, ratio exacto | 4 |
+| `split_dataset` — tamaños, proporciones, estratificación, no-solapamiento | 6 |
+| `process_split` — redimensionado, conversión RGB, nombre carpeta, colisiones | 4 |
+| `compute_normalization_stats` — forma y rango [0,1] | 2 |
+| `save_splits` — archivos CSV+JSON, contenido stats, columnas | 3 |
