@@ -22,7 +22,7 @@ Sentinel-1 (2014–2026) y se visualiza en un panel municipal.
 | 0 | Descarga de datasets | ✅ Completo | `claude/pavement-crack-downloader-ywz2ai` | — |
 | 1 | Preprocesamiento | ✅ Completo | `claude/grietas-toluca-phase-1-i8d7qd` | 2026-06-22 |
 | 2 | Entrenamiento teacher (DINOv2) | ✅ Completo | `claude/grietas-toluca-phase-2-denj4x` | 2026-06-22 |
-| 3 | Entrenamiento student (MobileNetV3) | ⬜ Pendiente | — | — |
+| 3 | Entrenamiento student (MobileNetV3) | ✅ Completo | `claude/grietas-toluca-phase-3-l15owg` | 2026-06-22 |
 | 4 | PWA ciudadana | ⬜ Pendiente | — | — |
 | 5 | Backend FastAPI | ⬜ Pendiente | — | — |
 | 6 | Ortorrectificación | ⬜ Pendiente | — | — |
@@ -401,3 +401,19 @@ sin preguntas adicionales de contexto.
 - Dependencia directa: lee `dataset_processed/dataset_stats.json` de Fase 1
 - **Nota GPU**: en CPU el entrenamiento es ~10× más lento; reducir batch a 8
   y num_workers a 2 si memoria es limitada (ver tabla de ajustes en fase2.md)
+
+### Fase 3 — Entrenamiento Student (`training/train_student.py`)
+- Rama: `claude/grietas-toluca-phase-3-l15owg`
+- Modelo: `torchvision.models.mobilenet_v3_small` (2.5 M params, ImageNet pretrained)
+- Cabeza: reemplazar `classifier[-1]` con `Linear(1024 → 2)`
+- Destilación: Hinton et al. (2015) — `T=3`, `α=0.5` (pérdida dura + pérdida suave KL)
+- Optimizador: AdamW único (todo el modelo), LR=1e-3, weight_decay=1e-4
+- Scheduler: CosineAnnealingLR(T_max=30), 30 épocas, batch=64
+- Precisión mixta fp16 con GradScaler (auto-desactivado en CPU)
+- Teacher: DINOv2Classifier cargado congelado desde `models/teacher_dinov2_best.pth`
+- Checkpoint: guarda el mejor por `val_accuracy` en `models/student_mobilenetv3_best.pth`
+- Salidas: `models/student_mobilenetv3.onnx` (opset 17, ≤ 15 MB),
+  `models/student_config.json`, `models/student_confusion_matrix.png`, `models/train_student.log`
+- Criterios de aceptación: `val_accuracy ≥ 90%`, ONNX ≤ 15 MB, latencia CPU ≤ 200 ms
+- Dependencias: `dataset_processed/dataset_stats.json` (Fase 1) + `models/teacher_dinov2_best.pth` (Fase 2)
+- Import: `sys.path.insert(0, training/)` + `from train_teacher import DINOv2Classifier`
