@@ -17,12 +17,17 @@ Sentinel-1 (2014–2026) y se visualiza en un panel municipal.
 
 ## 2. Estado de fases
 
-| Fase | Nombre | Estado | Chat |
-|------|--------|--------|------|
-| 0 | Descarga de datasets | ✅ Completo | — |
-| 1 | Preprocesamiento | ⬜ Pendiente | chat nuevo |
-| 2 | Entrenamiento teacher (DINOv2) | ⬜ Pendiente | chat nuevo (depende Fase 1) |
-| 3 | Entrenamiento student (MobileNetV3) | ⬜ Pendiente | chat nuevo (depende Fase 2) |
+| Fase | Nombre | Estado | Rama | Fecha |
+|------|--------|--------|------|-------|
+| 0 | Descarga de datasets | ✅ Completo | `claude/pavement-crack-downloader-ywz2ai` | — |
+| 1 | Preprocesamiento | ✅ Completo | `claude/grietas-toluca-phase-1-i8d7qd` | 2026-06-22 |
+| 2 | Entrenamiento teacher (DINOv2) | ✅ Completo | `claude/grietas-toluca-phase-2-denj4x` | 2026-06-22 |
+| 3 | Entrenamiento student (MobileNetV3) | ⬜ Pendiente | — | — |
+| 4 | PWA ciudadana | ⬜ Pendiente | — | — |
+| 5 | Backend FastAPI | ⬜ Pendiente | — | — |
+| 6 | Ortorrectificación | ⬜ Pendiente | — | — |
+| 7 | Segmentación y análisis | ⬜ Pendiente | — | — |
+| 8 | InSAR + índice de riesgo | ⬜ Pendiente | — | — |
 | 4 | PWA ciudadana | ⬜ Pendiente | chat nuevo (independiente) |
 | 5 | Backend FastAPI | ⬜ Pendiente | chat nuevo (independiente) |
 | 6 | Ortorrectificación | ⬜ Pendiente | chat nuevo (depende Fase 5) |
@@ -348,9 +353,51 @@ Pegar al inicio del nuevo chat:
 ```
 Implementa la Fase N del proyecto Grietas Toluca.
 Lee CONTEXT.md y faseN.md para el contexto completo.
-Crea la rama fase/N-<nombre> con base en main.
-Repositorio: javiersalasgarcia/grietas
+Crea y trabaja en la rama fase/N-<nombre>.
+Base: main (o fase/M si esta fase depende de la M).
 ```
 
 El modelo leerá ambos archivos y tendrá todo lo necesario para proceder
 sin preguntas adicionales de contexto.
+
+---
+
+## 12. Notas de implementación por fase
+
+### Fase 0 — Descarga de datasets (`download_crack_datasets.py`)
+- Rama: `claude/pavement-crack-downloader-ywz2ai`
+- Descarga datasets desde Roboflow, Mendeley, GitHub, Figshare y COCO
+- Genera `pavement_crack_datasets/download_registry.csv` y `registry.json`
+- Campos clave en el CSV: `file_type`, `local_path`, `categoria_proyecto`, `source`
+- Categorías originales: `"Aprobado"` y `"No Aprobado"` (con espacio)
+
+### Fase 1 — Preprocesamiento (`preprocessing/preprocess_dataset.py`)
+- Rama: `claude/grietas-toluca-phase-1-i8d7qd`
+- Lee `pavement_crack_datasets/download_registry.csv` (salida de Fase 0)
+- Verifica integridad con PIL, elimina corruptas (log en `corrupt_files.txt`)
+- Balancea clases: submuestrea mayoría si ratio > `MAX_IMBALANCE_RATIO=3.0`
+- Redimensiona a `(224, 224)` con LANCZOS, guarda como JPEG quality=92
+- Convierte `"No Aprobado"` → `"No_Aprobado"` (reemplaza espacio por guión bajo)
+- Estructura de salida: `dataset_processed/{train,val,test}/{Aprobado,No_Aprobado}/`
+- Splits: 70% train / 15% val / 15% test (stratified, seed=42)
+- Estadísticas de normalización en `dataset_processed/dataset_stats.json`:
+  - Claves: `mean_rgb` (lista [R,G,B]) y `std_rgb` (lista [R,G,B])
+  - Calculadas sobre muestra de hasta 2000 imágenes de train
+- `ImageFolder` asigna: `0 = Aprobado`, `1 = No_Aprobado` (orden alfabético)
+
+### Fase 2 — Entrenamiento Teacher (`training/train_teacher.py`)
+- Rama: `claude/grietas-toluca-phase-2-denj4x`
+- Modelo: `facebook/dinov2-base` (ViT-B/14, 86M params, HuggingFace)
+- Cabeza: `Linear(768→512) → ReLU → Dropout(0.3) → Linear(512→2)`
+- Bloques congelados: primeros 10 de 12 + embeddings del ViT
+- Optimizador: AdamW con dos grupos de LR: backbone=1e-5, cabeza=1e-3
+- Scheduler: CosineAnnealingLR(T_max=20), 20 épocas, batch=32
+- Precisión mixta fp16 con GradScaler (auto-desactivado en CPU)
+- Criterion: CrossEntropyLoss con pesos inversos a frecuencia de clase
+- Checkpoint: guarda el mejor por `val_f1_macro` en `models/teacher_dinov2_best.pth`
+- Salidas: `models/teacher_dinov2_config.json` (métricas + historial por época),
+  `models/teacher_confusion_matrix.png`, `models/train_teacher.log`
+- Criterios de aceptación: `val_accuracy ≥ 95%`, `recall(Aprobado) ≥ 94%`
+- Dependencia directa: lee `dataset_processed/dataset_stats.json` de Fase 1
+- **Nota GPU**: en CPU el entrenamiento es ~10× más lento; reducir batch a 8
+  y num_workers a 2 si memoria es limitada (ver tabla de ajustes en fase2.md)
