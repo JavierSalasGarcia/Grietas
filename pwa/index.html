@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#1a1a2e">
+  <link rel="manifest" href="/manifest.json">
+  <title>Reporta una grieta — Toluca</title>
+  <link rel="stylesheet" href="styles/main.css">
+</head>
+<body>
+  <!-- Pantalla de cámara -->
+  <div id="screen-camera" class="screen active">
+    <video id="camera-video" autoplay playsinline muted></video>
+    <canvas id="overlay-canvas"></canvas>
+    <canvas id="capture-canvas" hidden></canvas>
+
+    <div id="ui-controls">
+      <div id="angle-indicator">45°</div>
+      <button id="btn-shutter" class="shutter-btn" disabled>⬤</button>
+      <div id="status-msg"></div>
+    </div>
+  </div>
+
+  <!-- Pantalla de confirmación post-captura -->
+  <div id="screen-preview" class="screen">
+    <img id="preview-img" alt="Vista previa">
+    <div id="preview-meta"></div>
+    <button id="btn-send">Enviar reporte</button>
+    <button id="btn-retake">Retomar foto</button>
+  </div>
+
+  <!-- Pantalla de onboarding (primer uso) -->
+  <div id="screen-onboarding" class="screen">
+    <h2>Configura tu perfil</h2>
+    <label>Tu altura (cm):
+      <input type="number" id="input-height" min="120" max="220" value="165">
+    </label>
+    <button id="btn-onboarding-done">Continuar</button>
+  </div>
+
+  <script type="module" src="src/camera.js"></script>
+
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch(console.warn);
+    }
+  </script>
+</body>
+</html>

@@ -23,7 +23,7 @@ Sentinel-1 (2014–2026) y se visualiza en un panel municipal.
 | 1 | Preprocesamiento | ✅ Completo | `claude/grietas-toluca-phase-1-i8d7qd` | 2026-06-22 |
 | 2 | Entrenamiento teacher (DINOv2) | ✅ Completo | `claude/grietas-toluca-phase-2-denj4x` | 2026-06-22 |
 | 3 | Entrenamiento student (MobileNetV3) | ✅ Completo | `claude/grietas-toluca-phase-3-l15owg` | 2026-06-22 |
-| 4 | PWA ciudadana | ⬜ Pendiente | — | — |
+| 4 | PWA ciudadana | ✅ Completo | `claude/grietas-toluca-phase-4-pwa-uwpd7y` | 2026-06-22 |
 | 5 | Backend FastAPI | ⬜ Pendiente | — | — |
 | 6 | Ortorrectificación | ⬜ Pendiente | — | — |
 | 7 | Segmentación y análisis | ⬜ Pendiente | — | — |
