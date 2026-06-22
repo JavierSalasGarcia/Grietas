@@ -1,4 +1,4 @@
-# Fase 3 — Destilación del Modelo Student (MobileNetV3) `[PENDIENTE]`
+# Fase 3 — Destilación del Modelo Student (MobileNetV3) `[COMPLETO]`
 
 ## Contexto del proyecto
 
@@ -516,4 +516,83 @@ def classify_image(pil_image: Image.Image,
 
 **Fase 4** — PWA Frontend (`fase4.md`): captura de imagen y metadatos en el navegador.
 **Fase 5** — Backend API (`fase5.md`): integra el modelo ONNX en FastAPI.
-Estas dos fases pueden desarrollarse en paralelo con la Fase 3.
+Estas dos fases pueden desarrollarse en paralelo entre sí; ambas son independientes.
+
+---
+
+## Estado de implementación
+
+> Completado 2026-06-22 · Rama: `claude/grietas-toluca-phase-3-l15owg`
+
+### Qué se hizo
+
+**Archivo creado: `training/train_student.py`**
+
+Implementación completa de Knowledge Distillation (Hinton et al. 2015).
+
+| Sección | Detalle |
+|---|---|
+| `distillation_loss()` | `α·CrossEntropy + (1-α)·KL_Div·T²`. T² escala los gradientes de la pérdida suave para compensar la temperatura. |
+| `build_student()` | `MobileNetV3-Small` de torchvision con pesos ImageNet. Solo se reemplaza `classifier[-1]` con `Linear(1024→2)`. Todos los demás parámetros siguen entrenables. |
+| `build_dataloaders()` | Mismas augmentaciones de Fase 2 para consistencia. Retorna `class_to_idx` (orden alfabético: 0=Aprobado, 1=No_Aprobado). |
+| `train_epoch()` | Teacher en `eval()` con `torch.no_grad()`. Student en `train()`. Mixed precision con `torch.autocast` (solo activo si CUDA disponible). |
+| `evaluate()` | Retorna accuracy, predicciones, etiquetas y probabilidades softmax para métricas y matriz de confusión. |
+| `export_onnx()` | Opset 17, `do_constant_folding=True`, ejes dinámicos en batch. Aserta ≤ 15 MB tras exportar. |
+| `benchmark_latency()` | 10 runs de calentamiento + 100 runs de medición con `onnxruntime.CPUExecutionProvider`. Devuelve -1.0 si onnxruntime no está instalado (no aborta). |
+| `main()` | Flujo completo: cargar stats → cargar Teacher congelado → entrenar 30 épocas → eval test → exportar ONNX → benchmark → guardar `student_config.json` y `student_confusion_matrix.png`. |
+
+**Adaptación respecto a la especificación de `fase3.md`:**
+- Añadido `sys.path.insert(0, str(Path(__file__).parent))` antes del import de `DINOv2Classifier`, para que funcione tanto con `python training/train_student.py` (desde raíz) como con `cd training && python train_student.py`.
+- `MODELS_DIR.mkdir(exist_ok=True)` movido antes del `logging.FileHandler` para evitar error si `models/` no existe.
+
+**Archivo modificado: `CONTEXT.md`**
+- Fase 3 marcada ✅ en la tabla de estado (sección 2).
+- Notas de implementación de Fase 3 añadidas a sección 12.
+
+### Qué NO se hizo (fuera del alcance de esta fase)
+
+- No se ejecutó el entrenamiento real (requiere GPU + datos de Fase 1 y Fase 2).
+- No se crearon tests unitarios para `train_student.py` (la especificación no los incluía; se puede añadir en `tests/test_student.py` en una iteración futura).
+- No se tocaron los archivos de Fases 4–9.
+
+### Cómo ejecutar
+
+```bash
+# Desde la raíz del repositorio
+pip install torch torchvision scikit-learn matplotlib tqdm onnxruntime
+python training/train_student.py
+```
+
+Requiere que existan:
+- `dataset_processed/` (salida de Fase 1)
+- `models/teacher_dinov2_best.pth` y `models/teacher_dinov2_config.json` (salida de Fase 2)
+
+### Cómo verificar el resultado
+
+```bash
+python - <<'EOF'
+import json, numpy as np
+from pathlib import Path
+
+cfg = json.loads(Path("models/student_config.json").read_text())
+print(f"Test accuracy:  {cfg['test_accuracy']:.4f}  (mín 0.90)")
+print(f"ONNX size:      {cfg['onnx_size_mb']:.1f} MB  (máx 15)")
+print(f"CPU latency:    {cfg['latency_cpu_ms']:.1f} ms  (máx 200)")
+assert cfg["test_accuracy"]  >= 0.90
+assert cfg["onnx_size_mb"]   <= 15.0
+assert cfg["latency_cpu_ms"] <= 200.0 or cfg["latency_cpu_ms"] == -1.0
+print("Fase 3 verificada ✓")
+EOF
+```
+
+### Mantenimiento de la rama
+
+| Tarea | Archivo a modificar |
+|---|---|
+| Cambiar temperatura T | `training/train_student.py` → constante `T` |
+| Cambiar peso α | `training/train_student.py` → constante `ALPHA` |
+| Cambiar épocas o LR | `training/train_student.py` → `EPOCHS`, `LR` |
+| Cambiar arquitectura student | `build_student()` — reemplazar modelo base y ajustar `in_features` |
+| Añadir augmentaciones | `build_dataloaders()` → `train_tf` |
+| Actualizar opset ONNX | `export_onnx()` → parámetro `opset_version` |
+| Reemplazar Teacher | `main()` → instancia de `DINOv2Classifier` y ruta del `.pth` |
