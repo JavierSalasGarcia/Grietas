@@ -1,2 +1,30 @@
-# Carpeta generada por el script de descarga (puede contener GBs de datos)
+# Datos generados (pueden contener GBs)
 pavement_crack_datasets/
+dataset_processed/
+data/
+
+# Artefactos de entrenamiento
+models/*.pth
+models/*.onnx
+models/
+
+# Imágenes subidas por ciudadanos
+images_storage/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+dist/
+build/
+*.egg
+
+# Variables de entorno
+.env
+.env.*
+
+# Sistema
+.DS_Store
+Thumbs.db
